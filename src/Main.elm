@@ -1,5 +1,6 @@
 module Main exposing (main)
 
+import Array exposing (Array)
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -17,44 +18,53 @@ main =
 
 
 type alias Model =
-    String
+    Array Sith
+
+
+type alias Sith =
+    { name : String
+    , homeworld : String
+    }
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( ""
+    ( Array.empty
     , Http.get
         { url = "http://localhost:3000/dark-jedis/3616"
-        , expect = Http.expectJson GotText nameDecoder
+        , expect = Http.expectJson GotSith sithDecoder
         }
     )
 
 
-nameDecoder : Decoder String
-nameDecoder =
-    field "name" string
+sithDecoder : Decoder Sith
+sithDecoder =
+    Json.Decode.map2 Sith
+        (field "name" string)
+        (field "homeworld" (field "name" string))
 
 
 type Msg
-    = GotText (Result Http.Error String)
+    = GotSith (Result Http.Error Sith)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotText (Ok string) ->
-            ( string, Cmd.none )
+        GotSith (Ok sith) ->
+            ( Array.push sith model, Cmd.none )
 
-        GotText _ ->
+        GotSith _ ->
             ( model, Cmd.none )
 
 
-viewSith name planet =
+viewSith : Sith -> Html msg
+viewSith sith =
     li [ class "css-slot" ]
         [ h3 []
-            [ text name ]
+            [ text sith.name ]
         , h6 []
-            [ text <| "Homeworld: " ++ planet ]
+            [ text <| "Homeworld: " ++ sith.homeworld ]
         ]
 
 
@@ -64,14 +74,7 @@ view model =
         [ h1 [ class "css-planet-monitor" ]
             [ text "Obi-Wan currently on Tatooine" ]
         , section [ class "css-scrollable-list" ]
-            [ ul [ class "css-slots" ]
-                [ viewSith "Jorak Uln" "Korriban"
-                , viewSith "Skere Kaan" "Coruscant"
-                , viewSith "Na'daz" "Ryloth"
-                , viewSith "Kas'im" "Nal Hutta"
-                , viewSith "Darth Bane" "Apatros"
-                , viewSith model "Kraków"
-                ]
+            [ ul [ class "css-slots" ] (Array.map viewSith model |> Array.toList)
             , div [ class "css-scroll-buttons" ]
                 [ button [ class "css-button-up" ]
                     []
