@@ -4,6 +4,7 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Http
+import Json.Decode exposing (Decoder, field, string)
 
 
 main =
@@ -16,26 +17,36 @@ main =
 
 
 type alias Model =
-    Int
+    String
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( 0
+    ( ""
     , Http.get
         { url = "http://localhost:3000/dark-jedis/3616"
-        , expect = Http.expectString GotText
+        , expect = Http.expectJson GotText nameDecoder
         }
     )
+
+
+nameDecoder : Decoder String
+nameDecoder =
+    field "name" string
 
 
 type Msg
     = GotText (Result Http.Error String)
 
 
-update : msg -> Model -> ( Model, Cmd msg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        GotText (Ok string) ->
+            ( string, Cmd.none )
+
+        GotText _ ->
+            ( model, Cmd.none )
 
 
 viewSith name planet =
@@ -48,7 +59,7 @@ viewSith name planet =
 
 
 view : Model -> Html msg
-view _ =
+view model =
     div [ class "css-root" ]
         [ h1 [ class "css-planet-monitor" ]
             [ text "Obi-Wan currently on Tatooine" ]
@@ -59,6 +70,7 @@ view _ =
                 , viewSith "Na'daz" "Ryloth"
                 , viewSith "Kas'im" "Nal Hutta"
                 , viewSith "Darth Bane" "Apatros"
+                , viewSith model "Kraków"
                 ]
             , div [ class "css-scroll-buttons" ]
                 [ button [ class "css-button-up" ]
