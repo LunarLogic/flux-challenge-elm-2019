@@ -1,11 +1,11 @@
-module Main exposing (main)
+module Main exposing (Msg(..), init, main, update)
 
 import Array exposing (Array)
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Http
-import Json.Decode exposing (Decoder, field, int, string)
+import Json.Decode exposing (Decoder, field, int, nullable, string)
 
 
 main =
@@ -24,7 +24,7 @@ type alias Model =
 type alias Sith =
     { name : String
     , homeworld : String
-    , apprenticeId : Int --TODO change it to maybe Int
+    , apprenticeId : Maybe Int
     }
 
 
@@ -43,7 +43,7 @@ sithDecoder =
     Json.Decode.map3 Sith
         (field "name" string)
         (field "homeworld" (field "name" string))
-        (field "apprentice" (field "id" int))
+        (field "apprentice" (field "id" (nullable int)))
 
 
 type Msg
@@ -55,10 +55,15 @@ update msg model =
     case msg of
         GotSith (Ok sith) ->
             ( Array.push sith model
-            , Http.get
-                { url = "http://localhost:3000/dark-jedis/" ++ String.fromInt sith.apprenticeId
-                , expect = Http.expectJson GotSith sithDecoder
-                }
+            , case sith.apprenticeId of
+                Nothing ->
+                    Cmd.none
+
+                Just apprenticeId ->
+                    Http.get
+                        { url = "http://localhost:3000/dark-jedis/" ++ String.fromInt apprenticeId
+                        , expect = Http.expectJson GotSith sithDecoder
+                        }
             )
 
         GotSith _ ->
