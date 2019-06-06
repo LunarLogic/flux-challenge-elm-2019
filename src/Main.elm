@@ -25,6 +25,7 @@ type alias Sith =
     { name : String
     , homeworld : String
     , apprenticeId : Maybe Int
+    , masterId : Maybe Int
     }
 
 
@@ -33,40 +34,64 @@ init _ =
     ( Array.empty
     , Http.get
         { url = "http://localhost:3000/dark-jedis/3616"
-        , expect = Http.expectJson GotSith sithDecoder
+        , expect = Http.expectJson GotApprentice sithDecoder
         }
     )
 
 
 sithDecoder : Decoder Sith
 sithDecoder =
-    Json.Decode.map3 Sith
+    Json.Decode.map4 Sith
         (field "name" string)
         (field "homeworld" (field "name" string))
         (field "apprentice" (field "id" (nullable int)))
+        (field "master" (field "id" (nullable int)))
 
 
 type Msg
-    = GotSith (Result Http.Error Sith)
-
+    = GotApprentice (Result Http.Error Sith)
+    | GotMaster (Result Http.Error Sith)
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotSith (Ok sith) ->
+        GotApprentice (Ok sith) ->
             ( Array.push sith model
             , case sith.apprenticeId of
                 Nothing ->
-                    Cmd.none
+                    Array.get 0 model
+                    |> Maybe.andThen .masterId
+                    |> Maybe.map (\masterId ->
+                        Http.get
+                            { url = "http://localhost:3000/dark-jedis/" ++ String.fromInt masterId
+                            , expect = Http.expectJson GotMaster sithDecoder
+                            }
+                    )
+                    |>  Maybe.withDefault Cmd.none
 
                 Just apprenticeId ->
                     Http.get
                         { url = "http://localhost:3000/dark-jedis/" ++ String.fromInt apprenticeId
-                        , expect = Http.expectJson GotSith sithDecoder
+                        , expect = Http.expectJson GotApprentice sithDecoder
                         }
             )
 
-        GotSith _ ->
+        GotMaster (Ok sith) ->
+            ( Array.append (Array.fromList [sith]) model
+            , case sith.masterId of
+                Nothing ->
+                    Cmd.none
+                Just masterId ->
+                    Http.get
+                        { url = "http://localhost:3000/dark-jedis/" ++ String.fromInt masterId
+                        , expect = Http.expectJson GotMaster sithDecoder
+                        }
+            )
+
+        GotMaster _ ->
+            ( model, Cmd.none )
+
+        GotApprentice _ ->
             ( model, Cmd.none )
 
 
