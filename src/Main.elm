@@ -52,6 +52,7 @@ type Msg
     = GotApprentice (Result Http.Error Sith)
     | GotMaster (Result Http.Error Sith)
 
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -60,14 +61,15 @@ update msg model =
             , case sith.apprenticeId of
                 Nothing ->
                     Array.get 0 model
-                    |> Maybe.andThen .masterId
-                    |> Maybe.map (\masterId ->
-                        Http.get
-                            { url = "http://localhost:3000/dark-jedis/" ++ String.fromInt masterId
-                            , expect = Http.expectJson GotMaster sithDecoder
-                            }
-                    )
-                    |>  Maybe.withDefault Cmd.none
+                        |> Maybe.andThen .masterId
+                        |> Maybe.map
+                            (\masterId ->
+                                Http.get
+                                    { url = "http://localhost:3000/dark-jedis/" ++ String.fromInt masterId
+                                    , expect = Http.expectJson GotMaster sithDecoder
+                                    }
+                            )
+                        |> Maybe.withDefault Cmd.none
 
                 Just apprenticeId ->
                     Http.get
@@ -77,15 +79,24 @@ update msg model =
             )
 
         GotMaster (Ok sith) ->
-            ( Array.append (Array.fromList [sith]) model
-            , case sith.masterId of
-                Nothing ->
-                    Cmd.none
-                Just masterId ->
-                    Http.get
-                        { url = "http://localhost:3000/dark-jedis/" ++ String.fromInt masterId
-                        , expect = Http.expectJson GotMaster sithDecoder
-                        }
+            let
+                newModel =
+                    Array.append (Array.fromList [ sith ]) model
+            in
+            ( newModel
+            , if Array.length newModel < 5 then
+                case sith.masterId of
+                    Nothing ->
+                        Cmd.none
+
+                    Just masterId ->
+                        Http.get
+                            { url = "http://localhost:3000/dark-jedis/" ++ String.fromInt masterId
+                            , expect = Http.expectJson GotMaster sithDecoder
+                            }
+
+              else
+                Cmd.none
             )
 
         GotMaster _ ->
