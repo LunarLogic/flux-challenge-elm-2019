@@ -18,7 +18,7 @@ main =
 
 
 type alias Model =
-    Array Sith
+    Array (Maybe Sith)
 
 
 type alias Sith =
@@ -57,10 +57,11 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GotApprentice (Ok sith) ->
-            ( Array.push sith model
+            ( Array.push (Just sith) model
             , case sith.apprenticeId of
                 Nothing ->
                     Array.get 0 model
+                        |> Maybe.andThen identity
                         |> Maybe.andThen .masterId
                         |> Maybe.map
                             (\masterId ->
@@ -81,7 +82,7 @@ update msg model =
         GotMaster (Ok sith) ->
             let
                 newModel =
-                    Array.append (Array.fromList [ sith ]) model
+                    Array.append (Array.fromList [ Just sith ]) model
             in
             ( newModel
             , if Array.length newModel < 5 then
@@ -106,14 +107,19 @@ update msg model =
             ( model, Cmd.none )
 
 
-viewSith : Sith -> Html msg
-viewSith sith =
-    li [ class "css-slot" ]
-        [ h3 []
-            [ text sith.name ]
-        , h6 []
-            [ text <| "Homeworld: " ++ sith.homeworld ]
-        ]
+viewSith : Maybe Sith -> Html msg
+viewSith maybeSith =
+    case maybeSith of
+        Just sith ->
+            li [ class "css-slot" ]
+                [ h3 []
+                    [ text sith.name ]
+                , h6 []
+                    [ text <| "Homeworld: " ++ sith.homeworld ]
+                ]
+
+        Nothing ->
+            li [ class "css-slot" ] []
 
 
 view : Model -> Html msg
