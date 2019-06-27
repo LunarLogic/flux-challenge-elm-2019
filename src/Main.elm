@@ -6,6 +6,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Http
 import Json.Decode exposing (Decoder, field, int, nullable, string)
+import Roster exposing (Sith, Roster)
 
 
 main =
@@ -18,23 +19,15 @@ main =
 
 
 type alias Model =
-    Array (Maybe Sith)
-
-
-type alias Sith =
-    { name : String
-    , homeworld : String
-    , apprenticeId : Maybe Int
-    , masterId : Maybe Int
-    }
+    Roster
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Array.empty
+    ( Roster.empty
     , Http.get
         { url = "http://localhost:3000/dark-jedis/3616"
-        , expect = Http.expectJson GotApprentice sithDecoder
+        , expect = Http.expectJson GotFirstSith sithDecoder
         }
     )
 
@@ -51,11 +44,25 @@ sithDecoder =
 type Msg
     = GotApprentice (Result Http.Error Sith)
     | GotMaster (Result Http.Error Sith)
+    | GotFirstSith (Result Http.Error Sith)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GotFirstSith (Ok sith) ->
+            ( Roster.init sith
+            , case sith.apprenticeId of
+                Nothing ->
+                    Cmd.none
+
+                Just apprenticeId ->
+                    Http.get
+                        { url = "http://localhost:3000/dark-jedis/" ++ String.fromInt apprenticeId
+                        , expect = Http.expectJson GotApprentice sithDecoder
+                        }
+            )
+
         GotApprentice (Ok sith) ->
             ( Array.push (Just sith) model
             , case sith.apprenticeId of
@@ -98,6 +105,9 @@ update msg model =
                   else
                     Cmd.none
                 )
+
+        GotFirstSith _ ->
+            ( model, Cmd.none )
 
         GotMaster _ ->
             ( model, Cmd.none )

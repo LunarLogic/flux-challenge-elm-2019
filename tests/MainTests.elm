@@ -16,16 +16,17 @@ suite =
                         { name = ""
                         , homeworld = ""
                         , apprenticeId = Nothing
+                        , masterId = Nothing
                         }
 
                     msg =
-                        GotSith (Ok sith)
+                        GotApprentice (Ok sith)
 
                     model =
                         init () |> Tuple.first
                 in
-                update msg model
-                    |> Tuple.second
-                    |> (==) Cmd.none
-                    |> Expect.true "Expected the command to be Cmd.none"
+                    update msg model
+                        |> Tuple.second
+                        |> (==) Cmd.none
+                        |> Expect.true "Expected the command to be Cmd.none"
         ]
