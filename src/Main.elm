@@ -84,21 +84,20 @@ update msg model =
                 newModel =
                     Array.append (Array.fromList [ Just sith ]) model
             in
-            ( newModel
-            , if Array.length newModel < 5 then
-                case sith.masterId of
-                    Nothing ->
-                        Cmd.none
+                ( newModel
+                , if Array.length newModel < 5 then
+                    case sith.masterId of
+                        Nothing ->
+                            Cmd.none
 
-                    Just masterId ->
-                        Http.get
-                            { url = "http://localhost:3000/dark-jedis/" ++ String.fromInt masterId
-                            , expect = Http.expectJson GotMaster sithDecoder
-                            }
-
-              else
-                Cmd.none
-            )
+                        Just masterId ->
+                            Http.get
+                                { url = "http://localhost:3000/dark-jedis/" ++ String.fromInt masterId
+                                , expect = Http.expectJson GotMaster sithDecoder
+                                }
+                  else
+                    Cmd.none
+                )
 
         GotMaster _ ->
             ( model, Cmd.none )
