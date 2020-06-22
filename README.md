@@ -2,6 +2,8 @@
 
 A solution to [flux-challenge](https://github.com/staltz/flux-challenge) written in Elm.
 
+This is our previous attempt at solving the challenge. See [our current attempt](https://github.com/LunarLogic/flux-challenge-elm/).
+
 ## Starting the app
 
 1. Start the frontend server by running `yarn run start` (install packages by running `yarn` first).
